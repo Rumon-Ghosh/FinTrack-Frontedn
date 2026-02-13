@@ -1,0 +1,9 @@
+@import "tailwindcss";
+
+@plugin "daisyui" {
+  themes: light --default;
+}
+
+:root {
+  font-family: 'Outfit', sans-serif;
+}
