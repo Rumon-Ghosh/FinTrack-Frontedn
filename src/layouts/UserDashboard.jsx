@@ -51,25 +51,6 @@ const UserDashboard = () => {
     },
   ];
 
-  const adminLinks = [
-    {
-      to: "/dashboard/admin",
-      icon: <ShieldCheck className="size-5" />,
-      label: "Admin Stats",
-    },
-    {
-      to: "/dashboard/admin/users",
-      icon: <Users className="size-5" />,
-      label: "Manage Users",
-    },
-    {
-      to: "/dashboard/admin/categories",
-      icon: <Layers className="size-5" />,
-      label: "Manage Categories",
-    },
-  ];
-
-  const isAdmin = user?.role === "admin";
 
   return (
     <div className="drawer lg:drawer-open">
