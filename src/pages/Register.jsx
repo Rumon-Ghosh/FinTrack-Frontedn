@@ -1,11 +1,16 @@
 import React, { useState } from 'react';
 import { Mail, Lock, Eye, EyeOff, User, Camera, LayoutDashboard, ArrowLeft } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
+import useAuth from '../hooks/useAuth';
+import useImageUpload from '../hooks/useImageUpload';
+import Swal from 'sweetalert2';
 
 const Register = () => {
     const [showPassword, setShowPassword] = useState(false);
-    const [isLoading, setIsLoading] = useState(false);
+    const { createUser, loading: authLoading } = useAuth();
+    const { uploadImage, uploading: imageUploading } = useImageUpload();
+    const navigate = useNavigate();
 
     const {
         register,
@@ -13,10 +18,40 @@ const Register = () => {
         formState: { errors },
     } = useForm();
 
-    const onSubmit = (data) => {
-        // setIsLoading(true);
-        const {fullname, photo, email, password} = data;
-        console.log(fullname, photo, email, password);
+    const onSubmit = async (data) => {
+        const { fullname, photoFile, email, password } = data;
+
+        try {
+            let photoUrl = "https://t4.ftcdn.net/jpg/05/49/98/39/360_F_549983970_bSzVdk7zkqIZQ9G06tUJ9qzKLoADZQDg.jpg";
+
+            if (photoFile && photoFile[0]) {
+                const uploadedUrl = await uploadImage(photoFile[0]);
+                if (uploadedUrl) {
+                    photoUrl = uploadedUrl;
+                } else {
+                    return; // Error handled by hook
+                }
+            }
+
+            const res = await createUser(fullname, photoUrl, email, password);
+            if (res.success) {
+                Swal.fire({
+                    toast: true,
+                    position: 'top-end',
+                    icon: 'success',
+                    title: 'Account created successfully',
+                    showConfirmButton: false,
+                    timer: 3000
+                });
+                navigate('/dashboard');
+            }
+        } catch (err) {
+            Swal.fire({
+                icon: 'error',
+                title: 'Registration Failed',
+                text: err.message || 'Could not create account',
+            });
+        }
     };
 
     return (
@@ -71,23 +106,23 @@ const Register = () => {
                             {errors.fullname && <span className="text-error text-xs mt-1 ml-1">{errors.fullname.message}</span>}
                         </div>
 
-                        {/* Photo URL */}
+                        {/* Photo Selection */}
                         <div className="form-control w-full">
                             <label className="label">
-                                <span className="label-text font-semibold">Photo URL</span>
+                                <span className="label-text font-semibold">Profile Photo</span>
                             </label>
                             <div className="relative group">
                                 <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-base-content/40 group-focus-within:text-primary transition-colors">
                                     <Camera className="w-5 h-5" />
                                 </div>
                                 <input
-                                    type="text"
-                                    placeholder="https://example.com/photo.jpg"
-                                    className={`input input-bordered w-full pl-11 focus:border-primary transition-all duration-300 ${errors.photo ? 'input-error' : ''}`}
-                                    {...register("photo", { required: "Photo URL is required" })}
+                                    type="file"
+                                    accept="image/*"
+                                    className={`file-input file-input-bordered w-full pl-11 focus:border-primary transition-all duration-300 ${errors.photoFile ? 'file-input-error' : ''}`}
+                                    {...register("photoFile", { required: "Profile Photo is required" })}
                                 />
                             </div>
-                            {errors.photo && <span className="text-error text-xs mt-1 ml-1">{errors.photo.message}</span>}
+                            {errors.photoFile && <span className="text-error text-xs mt-1 ml-1">{errors.photoFile.message}</span>}
                         </div>
 
                         {/* Email */}
@@ -132,8 +167,8 @@ const Register = () => {
                                         required: "Password is required",
                                         minLength: { value: 6, message: "Minimum 6 characters required" },
                                         pattern: {
-                                            value: /^(?=.*[a-z])(?=.*[A-Z])[a-zA-Z]+$/,
-                                            message: "Password must contain at least one uppercase and one lowercase letter"
+                                            value: /^(?=.*[a-z])(?=.*[A-Z]).+$/,
+                                            message: "Must contain at least one uppercase and one lowercase letter"
                                         }
                                     })}
                                 />
@@ -150,10 +185,10 @@ const Register = () => {
 
                         <button
                             type="submit"
-                            className={`btn btn-primary w-full h-12 text-lg shadow-lg shadow-primary/20 mt-4 ${isLoading ? 'loading' : ''}`}
-                            disabled={isLoading}
+                            className={`btn btn-primary w-full h-12 text-lg shadow-lg shadow-primary/20 mt-4 ${(authLoading || imageUploading) ? 'loading' : ''}`}
+                            disabled={authLoading || imageUploading}
                         >
-                            {isLoading ? 'Creating account...' : 'Create Account'}
+                            {imageUploading ? 'Uploading Avatar...' : authLoading ? 'Creating account...' : 'Create Account'}
                         </button>
                     </form>
 

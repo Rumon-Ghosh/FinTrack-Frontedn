@@ -1,11 +1,14 @@
 import React, { useState } from 'react';
 import { Mail, Lock, Eye, EyeOff, LayoutDashboard } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
+import useAuth from '../hooks/useAuth';
+import Swal from 'sweetalert2';
 
 const Login = () => {
     const [showPassword, setShowPassword] = useState(false);
-    const [isLoading, setIsLoading] = useState(false);
+    const { login, loading: authLoading } = useAuth();
+    const navigate = useNavigate();
 
     const {
         register,
@@ -13,13 +16,32 @@ const Login = () => {
         formState: { errors },
     } = useForm();
 
-    const onSubmit = (data) => {
-        setIsLoading(true);
-        // Simulate login
-        setTimeout(() => {
-            setIsLoading(false);
-            console.log('Login with:', data);
-        }, 2000);
+    const onSubmit = async (data) => {
+        const { email, password } = data;
+        try {
+            const res = await login(email, password);
+            if (res.success) {
+                Swal.fire({
+                    toast: true,
+                    position: 'top-end',
+                    icon: 'success',
+                    title: 'Signed in successfully',
+                    showConfirmButton: false,
+                    timer: 3000
+                });
+                if (res.user.role === 'admin') {
+                    navigate('/admin/dashboard');
+                } else {
+                    navigate('/dashboard');
+                }
+            }
+        } catch (err) {
+            Swal.fire({
+                icon: 'error',
+                title: 'Login Failed',
+                text: err.message || 'Invalid email or password',
+            });
+        }
     };
 
     return (
@@ -78,7 +100,6 @@ const Login = () => {
                         <div className="form-control">
                             <label className="label">
                                 <span className="label-text font-semibold">Password</span>
-                                <a href="#" className="label-text-alt link link-hover text-primary font-medium">Forgot?</a>
                             </label>
                             <div className="relative group">
                                 <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-base-content/40 group-focus-within:text-primary transition-colors">
@@ -91,9 +112,9 @@ const Login = () => {
                                     {...register("password", {
                                         required: "Password is required",
                                         minLength: { value: 6, message: "Minimum 6 characters required" },
-                                        validate: {
-                                            hasUpper: (v) => /[A-Z]/.test(v) || "Must contain at least one uppercase letter",
-                                            hasLower: (v) => /[a-z]/.test(v) || "Must contain at least one lowercase letter"
+                                        pattern: {
+                                            value: /^(?=.*[a-z])(?=.*[A-Z]).+$/,
+                                            message: "Must contain at least one uppercase and one lowercase letter"
                                         }
                                     })}
                                 />
@@ -110,10 +131,10 @@ const Login = () => {
 
                         <button
                             type="submit"
-                            className={`btn btn-primary w-full h-12 text-lg shadow-lg shadow-primary/20 ${isLoading ? 'loading' : ''}`}
-                            disabled={isLoading}
+                            className={`btn btn-primary w-full h-12 text-lg shadow-lg shadow-primary/20 ${authLoading ? 'loading' : ''}`}
+                            disabled={authLoading}
                         >
-                            {isLoading ? 'Signing in...' : 'Sign In'}
+                            {authLoading ? 'Signing in...' : 'Sign In'}
                         </button>
                     </form>
 
