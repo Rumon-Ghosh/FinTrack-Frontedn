@@ -17,6 +17,7 @@ const AdminDashboardLayout = () => {
     const { user, logout } = useAuth();
     const navigate = useNavigate();
 
+    // LogOut Function
     const handleLogout = async () => {
         try {
             await logout();
